@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Day 04 Debugging and Advanced Concepts </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" href="workshop.css">
+  </head>
+  <body>
+    <!--
+    <div style="position: absolute; left: 20%; right: 20%; top: 30%;">
+      <h1 style="font-size: 3em;">Loading ...</h1>
+      The slides should show up here. If they don't, it might be
+      because you are accessing this file directly from your filesystem.
+      It needs to be served from a web server. You can try this:
+      <pre>
+        docker-compose up -d
+        open http://localhost:8888/workshop.html # on MacOS
+        xdg-open http://localhost:8888/workshop.html # on Linux
+      </pre>
+      Once the slides are loaded, this notice disappears when you
+      go full screen (e.g. by hitting "f").
+    </div>
+    -->
+    <textarea id="source">class: title, self-paced
+
+Day 04<br/>Debugging and Advanced Concepts<br/><br/></br>
+
+.debug[[shared/title.md](file:///home/xeon/urgent/slides/shared/title.md)]
+---
+
+class: title, in-person
+
+Day 04<br/>Debugging and Advanced Concepts<br/><br/></br>
+
+
+
+<!--
+WiFi: **Something**<br/>
+Password: **Something**
+
+**Be kind to the WiFi!**<br/>
+*Use the 5G network.*
+*Don't use your hotspot.*<br/>
+*Don't stream videos or download big files during the workshop*<br/>
+*Thank you!*
+-->
+
+.debug[[shared/title.md](file:///home/xeon/urgent/slides/shared/title.md)]
+---
+
+name: toc-module-0
+
+## Table of contents
+
+- [Networking Model](#toc-networking-model)
+
+- [Authentication and Authorization](#toc-authentication-and-authorization)
+
+- [Debugging](#toc-debugging)
+
+- [Helm 3](#toc-helm-)
+
+- [Bitnami Kubernetes Production Ready](#toc-bitnami-kubernetes-production-ready)
+
+.debug[(auto-generated TOC)]
+
+
+
+.debug[[shared/toc.md](file:///home/xeon/urgent/slides/shared/toc.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/Container-Ship-Freighter-Navigation-Elbe-Romance-1782991.jpg)]
+
+---
+
+name: toc-networking-model
+class: title
+
+ Networking Model
+
+.nav[
+[Previous section](#toc-)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-authentication-and-authorization)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Networking Model
+
+- TL,DR:
+
+  *Our cluster (nodes and pods) is one big flat IP network.*
+
+--
+
+- In detail:
+
+ - all nodes must be able to reach each other, without NAT
+
+ - all pods must be able to reach each other, without NAT
+
+ - pods and nodes must be able to reach each other, without NAT
+
+ - each pod is aware of its IP address (no NAT)
+
+ - pod IP addresses are assigned by the network implementation
+
+- Kubernetes doesn't mandate any particular implementation
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+## Networking Fundamentals
+
+--
+
+- Layer 2 Networking: Node to Node
+
+--
+
+- Layer 7 Networking: Ingress Controllers
+
+--
+
+- NAT — Network Address Translation: Remapping IPs into another
+
+--
+
+- Network Namespace: Logical copy of the entire network stack; routes, fw rules, and network devices
+
+--
+
+- veth — Virtual Ethernet Device Pairs: Tunnles between Namespaces
+
+--
+
+- bridge — Network Bridge: Connecting two segments as if they were one
+
+--
+
+- CNI — Container Network Interface: A CNCF project consisting of specification and libraries for writing plugins
+
+--
+
+- VIP — Virtual IP Address: Software defined IP that does not correspond to an actual phyrical network interface
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+## Networking Fundamentals
+
+--
+
+- netfilter — The Packet Filtering Framework for Linux
+
+--
+
+- iptables — Packet Mangling Tool
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+## Kubernetes network model: the good
+
+- Everything can reach everything
+
+- No address translation
+
+- No port translation
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+## Kubernetes network model: the less good
+
+- Everything can reach everything
+
+  - if you want security, you need to add network policies
+
+  - the network implementation that you use needs to support them
+
+- There are literally dozens of implementations out there
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+## The Container Network Interface (CNI)
+
+- Most Kubernetes clusters use CNI "plugins" to implement networking
+
+- When a pod is created, Kubernetes delegates the network setup to these plugins
+
+- Typically, CNI plugins will:
+
+  - allocate an IP address
+
+  - add a network interface into the pod's network namespace
+
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+## Characteristics
+
+- The "pod-to-pod network" or "pod network":
+
+  - provides communication between pods and nodes
+
+  - is generally implemented with CNI plugins
+
+- The "pod-to-service network":
+
+  - provides internal communication and load balancing
+
+  - is generally implemented with kube-proxy
+
+- Network policies:
+
+  - provide firewalling and isolation
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+## Requirements
+
+ - all nodes must be able to reach each other
+
+ - all pods must be able to reach each other
+
+ - pods and nodes must be able to reach each other
+
+ - each pod is aware of its IP address
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+class: pic
+
+![Container to Container](images/networkcontainer.png)
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+
+class: pic
+
+![Pod to Pod](images/networkpod.png)
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+
+class: pic
+
+![Pod to Pod Same Node](images/networkpodtopodsame.gif)
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+
+class: pic
+
+![Pod to Pod Different Node](images/networkpodtopodsdifferent.gif)
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+
+class: pic
+
+![Pod to Service](images/networkpodtoservice.gif)
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+
+class: pic
+
+![Service to Pod](images/networkpodtoservice2.gif)
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+
+class: pic
+
+![Pod to Internet](images/networkpodtozinternet.gif)
+
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+
+class: pic
+
+![Internet to Service](images/networkzinternettoservice.gif)
+
+---
+.debug[[k8s/Networking_Model.md](file:///home/xeon/urgent/slides/k8s/Networking_Model.md)]
+---
+## Network policies
+
+- Namespaces help us to *organize* resources
+
+- Namespaces do not provide isolation
+
+- By default, every pod can contact every other pod
+
+- By default, every service accepts traffic from anyone
+
+- If we want this to be different, we need *network policies*
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## What's a network policy?
+
+A network policy is defined by the following things.
+
+- A *pod selector* indicating which pods it applies to
+
+  e.g.: "all pods in namespace `blue` with the label `zone=internal`"
+
+- A list of *ingress rules* indicating which inbound traffic is allowed
+
+  e.g.: "TCP connections to ports 8000 and 8080 coming from pods with label `zone=dmz`,
+  and from the external subnet 4.42.6.0/24, except 4.42.6.5"
+
+- A list of *egress rules* indicating which outbound traffic is allowed
+
+A network policy can provide ingress rules, egress rules, or both.
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## How do network policies apply?
+
+- A pod can be "selected" by any number of network policies
+
+- If a pod isn't selected by any network policy, then its traffic is unrestricted
+
+  (In other words: in the absence of network policies, all traffic is allowed)
+
+- If a pod is selected by at least one network policy, then all traffic is blocked ...
+
+  ... unless it is explicitly allowed by one of these network policies
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+class: extra-details
+
+## Traffic filtering is flow-oriented
+
+- Network policies deal with *connections*, not individual packets
+
+- Example: to allow HTTP (80/tcp) connections to pod A, you only need an ingress rule
+
+  (You do not need a matching egress rule to allow response traffic to go through)
+
+- This also applies for UDP traffic
+
+  (Allowing DNS traffic can be done with a single rule)
+
+- Network policy implementations use stateful connection tracking
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## The rationale for network policies
+
+- In network security, it is generally considered better to "deny all, then allow selectively"
+
+  (The other approach, "allow all, then block selectively" makes it too easy to leave holes)
+
+- As soon as one network policy selects a pod, the pod enters this "deny all" logic
+
+- Further network policies can open additional access
+
+- Good network policies should be scoped as precisely as possible
+
+- In particular: make sure that the selector is not too broad
+
+  (Otherwise, you end up affecting pods that were otherwise well secured)
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Our first network policy
+
+This is our game plan:
+
+- run a web server in a pod
+
+- create a network policy to block all access to the web server
+
+- create another network policy to allow access only from specific pods
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Running our test web server
+
+.exercise[
+
+- Let's use the `nginx` image:
+  ```bash
+  kubectl create deployment testweb --image=nginx
+  ```
+
+<!--
+```bash
+kubectl wait deployment testweb --for condition=available
+```
+-->
+
+- Find out the IP address of the pod with one of these two commands:
+  ```bash
+  kubectl get pods -o wide -l app=testweb
+  IP=$(kubectl get pods -l app=testweb -o json | jq -r .items[0].status.podIP)
+  ```
+
+- Check that we can connect to the server:
+  ```bash
+  curl $IP
+  ```
+]
+
+The `curl` command should show us the "Welcome to nginx!" page.
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Looking at the network policy
+
+```yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: deny-all-for-testweb
+spec:
+  podSelector:
+    matchLabels:
+      app: testweb
+  ingress: []
+```
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Allowing connections only from specific pods
+
+- We want to allow traffic from pods with the label `run=testcurl`
+
+- This label is automatically applied when we do `kubectl run testcurl ...`
+
+.exercise[
+
+- Apply another policy:
+  ```yaml
+  kind: NetworkPolicy
+  apiVersion: networking.k8s.io/v1
+  metadata:
+    name: allow-testcurl-for-testweb
+  spec:
+    podSelector:
+      matchLabels:
+        app: testweb
+    ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            run: testcurl
+  ```
+
+]
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Testing the network policy
+
+- Let's create pods with, and without, the required label
+
+.exercise[
+
+- Try to connect to testweb from a pod with the `run=testcurl` label:
+  ```bash
+  kubectl run testcurl --rm -i --image=ahmedgabercod/net -- curl -m3 $IP
+  ```
+
+- Try to connect to testweb with a different label:
+  ```bash
+  kubectl run testkurl --rm -i --image=ahmedgabercod/net -- curl -m3 $IP
+  ```
+
+]
+
+The first command will work (and show the "Welcome to nginx!" page).
+
+The second command will fail and time out after 3 seconds.
+
+(The timeout is obtained with the `-m3` option.)
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## An important warning
+
+- Some network plugins only have partial support for network policies
+
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Network policies, pods, and services
+
+- Network policies apply to *pods*
+
+- A *service* can select multiple pods
+
+  (And load balance traffic across them)
+
+- It is possible that we can connect to some pods, but not some others
+
+  (Because of how network policies have been defined for these pods)
+
+- In that case, connections to the service will randomly pass or fail
+
+  (Depending on whether the connection was sent to a pod that we have access to or not)
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Network policies and namespaces
+
+- A good strategy is to isolate a namespace, so that:
+
+  - all the pods in the namespace can communicate together
+
+  - other namespaces cannot access the pods
+
+  - external access has to be enabled explicitly
+
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+## Cleaning up our network policies
+
+.exercise[
+
+- Remove all network policies:
+  ```bash
+  kubectl delete networkpolicies --all
+  ```
+
+]
+.debug[[k8s/netpol.md](file:///home/xeon/urgent/slides/k8s/netpol.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/ShippingContainerSFBay.jpg)]
+
+---
+
+name: toc-authentication-and-authorization
+class: title
+
+ Authentication and Authorization
+
+.nav[
+[Previous section](#toc-networking-model)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-debugging)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Authentication and Authorization
+
+- In this section, we will:
+
+  - define authentication and authorization
+
+  - explain how they are implemented in Kubernetes
+
+  - talk about tokens, certificates, service accounts, RBAC ...
+
+- But first: why do we need all this?
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## The need for fine-grained security
+
+- The Kubernetes API should only be available for identified users
+
+- Users will often have different access rights
+
+  - cluster admin (similar to UNIX "root") can do everything
+
+  - developer might access specific resources, or a specific namespace
+
+  - supervision might have read only access to *most* resources
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## Example: custom HTTP load balancer
+
+- Let's imagine that we have a custom HTTP load balancer for multiple apps
+
+- Each app has its own *Deployment* resource
+
+- By default, the apps are "sleeping" and scaled to zero
+
+- When a request comes in, the corresponding app gets woken up
+
+- After some inactivity, the app is scaled down again
+
+- This HTTP load balancer needs API access (to scale up/down)
+
+- What if *a wild vulnerability appears*?
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Definitions
+
+- Authentication = verifying the identity of a person
+
+  On a UNIX system, we can authenticate with login+password, SSH keys ...
+
+- Authorization = listing what they are allowed to do
+
+  On a UNIX system, this can include file permissions, sudoer entries ...
+
+- Sometimes abbreviated as "authn" and "authz"
+
+- In good modular systems, these things are decoupled
+
+   (so we can e.g. change a password or SSH key without having to reset access rights)
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Authentication in Kubernetes
+
+- When the API server receives a request, it tries to authenticate it
+
+  (it examines headers, certificates... anything available)
+
+- Many authentication methods are available and can be used simultaneously
+
+  (we will see them on the next slide)
+
+- It's the job of the authentication method to produce:
+
+  - the user name
+  - the user ID
+  - a list of groups
+
+- The API server doesn't interpret these; that'll be the job of *authorizers*
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Authentication methods
+
+- TLS client certificates
+
+  (that's what we've been doing with `kubectl` so far)
+
+- Bearer tokens
+
+  (a secret token in the HTTP headers of the request)
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Service accounts
+
+- A service account is a user that exists in the Kubernetes API
+
+  (it is visible with e.g. `kubectl get serviceaccounts`)
+
+- Service accounts can therefore be created / updated dynamically
+
+- Service accounts are generally used to grant permissions to applications, services...
+
+  (as opposed to humans)
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Listing service accounts
+
+.exercise[
+
+- The resource name is `serviceaccount` or `sa` for short:
+  ```bash
+  kubectl get sa
+  ```
+
+]
+
+There should be just one service account in the default namespace: `default`.
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+class: extra-details
+
+## Finding the secret
+
+.exercise[
+
+- List the secrets for the `default` service account:
+  ```bash
+  kubectl get sa default -o yaml
+  SECRET=$(kubectl get sa default -o json | jq -r .secrets[0].name)
+  ```
+
+]
+
+It should be named `default-token-XXXXX`.
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+
+## Extracting the token
+
+- The token is stored in the secret, wrapped with base64 encoding
+
+.exercise[
+
+- View the secret:
+  ```bash
+  kubectl get secret $SECRET -o yaml
+  ```
+
+- Extract the token and decode it:
+  ```bash
+  TOKEN=$(kubectl get secret $SECRET -o json | jq -r .data.token | openssl base64 -d -A)
+  ```
+
+]
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+
+## Using the token
+
+- Let's send a request to the API, without and with the token
+
+.exercise[
+
+- Find the ClusterIP for the `kubernetes` service:
+  ```bash
+  kubectl get svc kubernetes
+  API=$(kubectl get svc kubernetes -o json | jq -r .spec.clusterIP)
+  ```
+
+- Connect without the token:
+  ```bash
+  curl -k https://$API
+  ```
+
+- Connect with the token:
+  ```bash
+  curl -k -H "Authorization: Bearer $TOKEN" https://$API
+  ```
+
+]
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## Results
+
+- In both cases, we will get a "Forbidden" error
+
+- Without authentication, the user is `system:anonymous`
+
+- With authentication, it is shown as `system:serviceaccount:default:default`
+
+- The API "sees" us as a different user
+
+- But neither user has any rights, so we can't do nothin'
+
+- Let's change that!
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+
+## Authorization in Kubernetes
+
+- There are multiple ways to grant permissions in Kubernetes, called [authorizers](https://kubernetes.io/docs/reference/access-authn-authz/authorization/#authorization-modules):
+
+  - [Node Authorization](https://kubernetes.io/docs/reference/access-authn-authz/node/) (used internally by kubelet; we can ignore it)
+
+  - [Attribute-based access control](https://kubernetes.io/docs/reference/access-authn-authz/abac/) (powerful but complex and static; ignore it too)
+
+  - [Webhook](https://kubernetes.io/docs/reference/access-authn-authz/webhook/) (each API request is submitted to an external service for approval)
+
+  - [Role-based access control](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) (associates permissions to users dynamically)
+
+- The one we want is the last one, generally abbreviated as RBAC
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Role-based access control
+
+- RBAC allows to specify fine-grained permissions
+
+- Permissions are expressed as *rules*
+
+- A rule is a combination of:
+
+  - [verbs](https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-the-request-verb) like create, get, list, update, delete...
+
+  - resources (as in "API resource," like pods, nodes, services...)
+
+  - resource names (to specify e.g. one specific pod instead of all pods)
+
+  - in some case, [subresources](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#referring-to-resources) (e.g. logs are subresources of pods)
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## From rules to roles to rolebindings
+
+- A *role* is an API object containing a list of *rules*
+
+  Example: role "external-load-balancer-configurator" can:
+  - [list, get] resources [endpoints, services, pods]
+  - [update] resources [services]
+
+- A *rolebinding* associates a role with a user
+
+  Example: rolebinding "external-load-balancer-configurator":
+  - associates user "external-load-balancer-configurator"
+  - with role "external-load-balancer-configurator"
+
+- Yes, there can be users, roles, and rolebindings with the same name
+
+- It's a good idea for 1-1-1 bindings; not so much for 1-N ones
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Cluster-scope permissions
+
+- API resources Role and RoleBinding are for objects within a namespace
+
+- We can also define API resources ClusterRole and ClusterRoleBinding
+
+- These are a superset, allowing us to:
+
+  - specify actions on cluster-wide objects (like nodes)
+
+  - operate across all namespaces
+
+- We can create Role and RoleBinding resources within a namespace
+
+- ClusterRole and ClusterRoleBinding resources are global
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## Pods and service accounts
+
+- A pod can be associated with a service account
+
+  - by default, it is associated with the `default` service account
+
+  - as we saw earlier, this service account has no permissions anyway
+
+- The associated token is exposed to the pod's filesystem
+
+  (in `/var/run/secrets/kubernetes.io/serviceaccount/token`)
+
+- Standard Kubernetes tooling (like `kubectl`) will look for it there
+
+- So Kubernetes tools running in a pod will automatically use the service account
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## In practice
+
+- We are going to create a service account
+
+- We will use a default cluster role (`view`)
+
+- We will bind together this role and this service account
+
+- Then we will run a pod using that service account
+
+- In this pod, we will install `kubectl` and check our permissions
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Creating a service account
+
+- We will call the new service account `viewer`
+
+  (note that nothing prevents us from calling it `view`, like the role)
+
+.exercise[
+
+- Create the new service account:
+  ```bash
+  kubectl create serviceaccount viewer
+  ```
+
+- List service accounts now:
+  ```bash
+  kubectl get serviceaccounts
+  ```
+
+]
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Binding a role to the service account
+
+- Binding a role = creating a *rolebinding* object
+
+- We will call that object `viewercanview`
+
+  (but again, we could call it `view`)
+
+.exercise[
+
+- Create the new role binding:
+  ```bash
+  kubectl create rolebinding viewercanview \
+          --clusterrole=view \
+          --serviceaccount=default:viewer
+  ```
+
+]
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+class: extra-details
+
+## Roles vs Cluster Roles
+
+- We used `--clusterrole=view`
+
+- What would have happened if we had used `--role=view`?
+
+  - we would have bound the role `view` from the local namespace
+    <br/>(instead of the cluster role `view`)
+
+  - the command would have worked fine (no error)
+
+  - but later, our API requests would have been denied
+
+- This is a deliberate design decision
+
+  (we can reference roles that don't exist, and create/update them later)
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+class: extra-details
+
+## Users vs Service Accounts
+
+- We used `--serviceaccount=default:viewer`
+
+- What would have happened if we had used `--user=default:viewer`?
+
+  - we would have bound the role to a user instead of a service account
+
+  - again, the command would have worked fine (no error)
+
+  - ...but our API requests would have been denied later
+
+- What's about the `default:` prefix?
+
+  - that's the namespace of the service account
+
+  - yes, it could be inferred from context, but... `kubectl` requires it
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## Testing
+
+- We will run an `alpine` pod and install `kubectl` there
+
+.exercise[
+
+- Run a one-time pod:
+  ```bash
+  kubectl run eyepod --rm -ti --restart=Never \
+          --serviceaccount=viewer \
+          --image alpine
+  ```
+
+- Install `curl`, then use it to install `kubectl`:
+  ```bash
+  apk add --no-cache curl
+  URLBASE=https://storage.googleapis.com/kubernetes-release/release
+  KUBEVER=$(curl -s $URLBASE/stable.txt)
+  curl -LO $URLBASE/$KUBEVER/bin/linux/amd64/kubectl
+  chmod +x kubectl
+  ```
+
+]
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Running `kubectl` in the pod
+
+- We'll try to use our `view` permissions, then to create an object
+
+.exercise[
+
+- Check that we can, indeed, view things:
+  ```bash
+  ./kubectl get all
+  ```
+
+- But that we can't create things:
+  ```
+  ./kubectl create deployment testrbac --image=nginx
+  ```
+
+- Exit the container with `exit` or `^D`
+
+<!-- ```key ^D``` -->
+
+]
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+## Testing directly with `kubectl`
+
+- We can also check for permission with `kubectl auth can-i`:
+  ```bash
+  kubectl auth can-i list nodes
+  kubectl auth can-i create pods
+  kubectl auth can-i get pod/name-of-pod
+  kubectl auth can-i get /url-fragment-of-api-request/
+  kubectl auth can-i '*' services
+  ```
+
+- And we can check permissions on behalf of other users:
+  ```bash
+  kubectl auth can-i list nodes \
+          --as some-user
+  kubectl auth can-i list nodes \
+          --as system:serviceaccount:<namespace>:<name-of-service-account>
+  ```
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+- Kubernetes defines a number of ClusterRoles intended to be bound to users
+
+- `cluster-admin` can do *everything* (think `root` on UNIX)
+
+- `admin` can do *almost everything* (except e.g. changing resource quotas and limits)
+
+- `edit` is similar to `admin`, but cannot view or edit permissions
+
+- `view` has read-only access to most resources, except permissions and secrets
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## Customizing the default roles
+
+- If you need to *add* permissions to these default roles (or others),
+  <br/>
+  you can do it through the [ClusterRole Aggregation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles) mechanism
+
+- This happens by creating a ClusterRole with the following labels:
+  ```yaml
+    metadata:
+      labels:
+        rbac.authorization.k8s.io/aggregate-to-admin: "true"
+        rbac.authorization.k8s.io/aggregate-to-edit: "true"
+        rbac.authorization.k8s.io/aggregate-to-view: "true"
+  ```
+
+- This ClusterRole permissions will be added to `admin`/`edit`/`view` respectively
+
+- This is particulary useful when using CustomResourceDefinitions
+
+  (since Kubernetes cannot guess which resources are sensitive and which ones aren't)
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## Where do our permissions come from?
+
+- When interacting with the Kubernetes API, we are using a client certificate
+
+- We saw previously that this client certificate contained:
+
+  `CN=kubernetes-admin` and `O=system:masters`
+
+- Let's look for these in existing ClusterRoleBindings:
+  ```bash
+  kubectl get clusterrolebindings -o yaml |
+    grep -e kubernetes-admin -e system:masters
+  ```
+
+  (`system:masters` should show up, but not `kubernetes-admin`.)
+
+- Where does this match come from?
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## The `system:masters` group
+
+- If we eyeball the output of `kubectl get clusterrolebindings -o yaml`, we'll find out!
+
+- It is in the `cluster-admin` binding:
+  ```bash
+  kubectl describe clusterrolebinding cluster-admin
+  ```
+
+- This binding associates `system:masters` with the cluster role `cluster-admin`
+
+- And the `cluster-admin` is, basically, `root`:
+  ```bash
+  kubectl describe clusterrole cluster-admin
+  ```
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: extra-details
+
+## Figuring out who can do what
+
+- For auditing purposes, sometimes we want to know who can perform an action
+
+- There are a few tools to help us with that
+
+  - [kubectl-who-can](https://github.com/aquasecurity/kubectl-who-can) by Aqua Security
+
+  - [Review Access (aka Rakkess)](https://github.com/corneliusweig/rakkess)
+
+- Both are available as standalone programs, or as plugins for `kubectl`
+
+  (`kubectl` plugins can be installed and managed with `krew`)
+
+
+.debug[[k8s/authn-authz.md](file:///home/xeon/urgent/slides/k8s/authn-authz.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/aerial-view-of-containers.jpg)]
+
+---
+
+name: toc-debugging
+class: title
+
+ Debugging
+
+.nav[
+[Previous section](#toc-authentication-and-authorization)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-helm-)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Debugging
+
+- Things go wrong
+
+--
+
+  - Cluster components: API server, Controller manager, Scheduler, and ETCD 
+
+--
+
+  - Node health 
+
+--
+
+  - Application 
+
+--
+
+  - Pod failure 
+
+--
+
+  - Services running
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## Application Introspection and Debugging
+
+- Once your application is running, you'll inevitably need to debug problems with it. 
+
+- Earlier we described how you can use kubectl get pods to retrieve simple status information about your pods. 
+
+- Using `kubectl describe pod` to fetch details about pods
+
+- Check Events in running Pods
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+## Example: debugging Pending Pods
+
+- Check resource request limits 
+
+- Use `kubectl get events` 
+
+```bash
+  fit failure on node (kubernetes-node-6ta5): Node didn't have enough resource: CPU, requested: 1000, used: 1420, capacity: 2000
+  fit failure on node (kubernetes-node-wul5): Node didn't have enough resource: CPU, requested: 1000, used: 1100, capacity: 2000
+  ```
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## Debugging Pods
+
+- The first step in debugging a pod is taking a look at it 
+  
+  `kubectl describe pods ${POD_NAME}`
+
+  `kubectl get events`
+
+  `kubectl get nodes`
+
+  `kubectl get pods -o wide`
+
+  `kubectl logs ${POD_NAME}`
+
+- Check Status: Pending, CrashLoopBackOff, ErrImagePull, Container Creating
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## CrashLoopBackOff
+
+- 99% of the times indicates an application problem
+
+- try and run the container locally first
+
+- check application logs `kubectl logs ${POD_NAME}`
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## ErrImagePull
+
+- Check image tags
+
+- Check ImagePullPolicy; the latest tag sets the imagePullPolicy to Always implicitly
+
+- Edit the Pod and change to IfNotPresent explicitly
+
+- Check Container Runtime logs (docker)
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## Container Creating
+
+- Check secrets and configmaps
+
+- Check if image is pulled from private registry
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## Customizing the termination message
+
+- Kubernetes retrieves termination messages from the termination message file specified in the terminationMessagePath field of a Container
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: msg-path-demo
+spec:
+  containers:
+  - name: msg-path-demo-container
+    image: debian
+    terminationMessagePath: "/tmp/my-log"
+```
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## Debugging Services
+
+- Service is not working properly
+
+- Does the Service exist?
+
+- Does the Service work by DNS name? `nslookup` 
+
+- Does the Service work by IP? `ping` `curl` `wget -qO- 10.0.1.175:80`
+
+- Is the Service defined correctly?
+
+- Does the Service have any Endpoints? `kubectl get endpoints`
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+## Summary
+
+- Check Pod/Deployment Status, Events and logs
+
+- Check Service endpoints, labels, ports, and type
+
+
+[Reference](https://kubernetes.io/docs/tasks/debug-application-cluster/)
+
+.debug[[k8s/Debugging.md](file:///home/xeon/urgent/slides/k8s/Debugging.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/blue-containers.jpg)]
+
+---
+
+name: toc-helm-
+class: title
+
+ Helm 3
+
+.nav[
+[Previous section](#toc-debugging)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-bitnami-kubernetes-production-ready)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Helm 3
+
+- For larger stacks, managing thousands of lines of YAML is unreasonable
+
+- These YAML bundles need to be customized with variable parameters
+
+  (E.g.: number of replicas, image version to use ...)
+
+- It would be nice to be able to upgrade/rollback these bundles carefully
+
+- [Helm](https://helm.sh/) 
+
+.debug[[k8s/helm-intro.md](file:///home/xeon/urgent/slides/k8s/helm-intro.md)]
+---
+
+## Helm concepts
+
+- `helm` is a CLI tool
+
+- It is used to find, install, upgrade *charts*
+
+- A chart is an archive containing templatized YAML bundles
+
+- Charts are versioned
+
+- Charts can be stored on private or public repositories
+
+.debug[[k8s/helm-intro.md](file:///home/xeon/urgent/slides/k8s/helm-intro.md)]
+---
+
+## Installing Helm
+
+- If the `helm` CLI is not installed in your environment, install it
+
+.exercise[
+
+- Check if `helm` is installed:
+  ```bash
+  helm
+  ```
+
+- If it's not installed, run the following command:
+  ```bash
+  curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get-helm-3 \
+  | bash
+  ```
+
+  ```bash
+    choco install kubernetes-helm
+  ```
+
+]
+
+
+.debug[[k8s/helm-intro.md](file:///home/xeon/urgent/slides/k8s/helm-intro.md)]
+---
+
+## Managing repositories
+
+- Let's check what repositories we have, and add the `stable` repo
+
+  (the `stable` repo contains a set of official-ish charts)
+
+.exercise[
+
+- List our repos:
+  ```bash
+  helm repo list
+  ```
+
+- Add the `stable` repo:
+  ```bash
+  helm repo add bitnami https://charts.bitnami.com/bitnami 
+  ```
+
+]
+
+Adding a repo can take a few seconds (it downloads the list of charts from the repo).
+
+It's OK to add a repo that already exists (it will merely update it).
+
+.debug[[k8s/helm-intro.md](file:///home/xeon/urgent/slides/k8s/helm-intro.md)]
+---
+
+## Search available charts
+
+- We can search available charts with `helm search`
+
+- We need to specify where to search (only our repos, or Helm Hub)
+
+- Let's search for all charts mentioning tomcat!
+
+.exercise[
+
+- Search for nginx in the repo that we added earlier:
+  ```bash
+  helm search repo nginx
+  ```
+]
+
+.debug[[k8s/helm-intro.md](file:///home/xeon/urgent/slides/k8s/helm-intro.md)]
+---
+
+## Charts and releases
+
+- "Installing a chart" means creating a *release*
+
+- We need to name that release
+
+  (or use the `--generate-name` to get Helm to generate one for us)
+
+.exercise[
+
+- Install the tomcat chart that we found earlier:
+  ```bash
+  helm install nginx bitnami/nginx
+  ```
+
+- List the releases:
+  ```bash
+  helm list
+  ```
+
+]
+
+.debug[[k8s/helm-intro.md](file:///home/xeon/urgent/slides/k8s/helm-intro.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/chinook-helicopter-container.jpg)]
+
+---
+
+name: toc-bitnami-kubernetes-production-ready
+class: title
+
+ Bitnami Kubernetes Production Ready
+
+.nav[
+[Previous section](#toc-helm-)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Bitnami Kubernetes Production Ready
+
+- [Monitoring](https://github.com/bitnami/kube-prod-runtime/blob/master/docs/components.md#monitoring-stack)
+
+  - Prometheus
+  - Grafana
+  - Alertmanager
+
+- [Logging](https://github.com/bitnami/kube-prod-runtime/blob/master/docs/components.md#logging-stack)
+
+  - Elasticsearch
+  - Kibana
+  - Fluentd
+
+- [Ingress](https://github.com/bitnami/kube-prod-runtime/blob/master/docs/components.md#ingress-stack)
+
+  - nginx-ingress
+  - ExternalDNS
+  - cert-manager
+  - OAuth2 Proxy
+
+
+.debug[[k8s/BKPR.md](file:///home/xeon/urgent/slides/k8s/BKPR.md)]
+---
+class: title, in-person
+
+Thank you! <br/> Questions?
+
+.debug[[shared/thankyou.md](file:///home/xeon/urgent/slides/shared/thankyou.md)]</textarea>
+    <script src="remark.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        ratio: '16:9',
+        highlightSpans: true,
+        slideNumberFormat: '%current%/%total%',
+        excludedClasses: ["self-paced","snap","btp-auto","benchmarking","elk-manual","prom-manual","extra-details"]
+      });
+    </script>
+    
+    <!-- 
+    These two scripts will be available only when loading the
+    content using the pub/sub server. Otherwise, they'll just
+    404 and that's OK.
+    -->
+    <script src="/socket.io/socket.io.js">
+    </script>
+    <script src="/remote.js">
+    </script>
+
+  </body>
+</html>
