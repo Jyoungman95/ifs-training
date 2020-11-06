@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Day 05 Certified Kubernetes Application Developer </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" href="workshop.css">
+  </head>
+  <body>
+    <!--
+    <div style="position: absolute; left: 20%; right: 20%; top: 30%;">
+      <h1 style="font-size: 3em;">Loading ...</h1>
+      The slides should show up here. If they don't, it might be
+      because you are accessing this file directly from your filesystem.
+      It needs to be served from a web server. You can try this:
+      <pre>
+        docker-compose up -d
+        open http://localhost:8888/workshop.html # on MacOS
+        xdg-open http://localhost:8888/workshop.html # on Linux
+      </pre>
+      Once the slides are loaded, this notice disappears when you
+      go full screen (e.g. by hitting "f").
+    </div>
+    -->
+    <textarea id="source">class: title, self-paced
+
+Day 05<br/>Certified Kubernetes Application Developer<br/><br/></br>
+
+.debug[[shared/title.md](file:///home/xeon/urgent/slides/shared/title.md)]
+---
+
+class: title, in-person
+
+Day 05<br/>Certified Kubernetes Application Developer<br/><br/></br>
+
+
+
+<!--
+WiFi: **Something**<br/>
+Password: **Something**
+
+**Be kind to the WiFi!**<br/>
+*Use the 5G network.*
+*Don't use your hotspot.*<br/>
+*Don't stream videos or download big files during the workshop*<br/>
+*Thank you!*
+-->
+
+.debug[[shared/title.md](file:///home/xeon/urgent/slides/shared/title.md)]
+---
+
+name: toc-module-0
+
+## Table of contents
+
+- [Introduction](#toc-introduction)
+
+- [Core concepts](#toc-core-concepts)
+
+- [Pod Design](#toc-pod-design)
+
+- [Multicontainer Patterns](#toc-multicontainer-patterns)
+
+- [Configuration](#toc-configuration)
+
+- [Observability](#toc-observability)
+
+- [Services and Networking](#toc-services-and-networking)
+
+- [State Persistence](#toc-state-persistence)
+
+.debug[(auto-generated TOC)]
+
+
+
+.debug[[shared/toc.md](file:///home/xeon/urgent/slides/shared/toc.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/Container-Ship-Freighter-Navigation-Elbe-Romance-1782991.jpg)]
+
+---
+
+name: toc-introduction
+class: title
+
+ Introduction
+
+.nav[
+[Previous section](#toc-)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-core-concepts)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Introduction
+
+- Developed by the Cloud Native Computing Foundation (CNCF)
+
+- Establish credibility and value in the job market
+
+- Allow companies to quickly hire high-quality teams to support their growth
+
+- Certifies that users can design, build, configure, and expose cloud native applications for Kubernetes
+
+- Cost: 300 USD
+
+- Duration: ~19 questions in 2 hours
+
+- Version: 1.19
+
+.debug[[k8s/ckad_intro.md](file:///home/xeon/urgent/slides/k8s/ckad_intro.md)]
+---
+
+## Exam details
+
+- 13% – Core Concepts
+
+- 18% – Configuration
+
+- 10% – Multi-Container Pods
+
+- 18% – Observability
+
+- 20% – Pod Design
+
+- 13% – Services & Networking
+
+- 8% – State Persistence
+
+
+
+
+.debug[[k8s/ckad_intro.md](file:///home/xeon/urgent/slides/k8s/ckad_intro.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/ShippingContainerSFBay.jpg)]
+
+---
+
+name: toc-core-concepts
+class: title
+
+ Core concepts
+
+.nav[
+[Previous section](#toc-introduction)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-pod-design)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Core concepts
+
+- First make sure you are on v1.19, if you are not, upgrade
+
+- Understand Kubernetes API primitives
+
+- Create and configure basic Pods
+
+.debug[[k8s/ckad_core.md](file:///home/xeon/urgent/slides/k8s/ckad_core.md)]
+---
+
+## Understand Kubernetes API primitives
+
+- basic objects: containers, pods, services, volumes, namespaces, configmaps and secrets
+ 
+- controllers: deployments, statefulsets, daemonsets, jobs, cronjobs
+
+- API versioning
+
+  - Alpha: can contain bugs, disabled by default e.g v1alpha
+
+  - Beta: code is tested and considered safe, enabled by default e.g apiv1beta
+
+  - Stable: VX where X stands for an integer e.g v1
+
+
+
+.debug[[k8s/ckad_core.md](file:///home/xeon/urgent/slides/k8s/ckad_core.md)]
+---
+
+## Understand Kubernetes API primitives
+
+- API Groups `curl -k https://<serverip>:<port>/apis command`
+
+- `kubectl -v=8 get svc -n kube-system`
+
+
+.debug[[k8s/ckad_core.md](file:///home/xeon/urgent/slides/k8s/ckad_core.md)]
+---
+
+## Create and Configure Basic Pods
+
+- Use `kubectl run podname --image name` > Imperative
+
+- Use `kubectl run podname --image name --dry-run -o yaml > filename` followed by `kubectl apply -f filename` > Declarative
+
+- List pods `kubectl get pods -o wide`
+
+- Change image version `kubectl set image pod/nginx nginx=nginx:1.17.1`
+
+- Use json path `kubectl get pod nginx -o jsonpath='{.spec.containers[].image}{"\n"}'`
+
+- Inspect `kubectl logs pod` `kubectl describe pod` `kubectl exec -ti pod/nginx -- sh`
+
+- Format the output `kubectl get pods--sort-by=.metadata.creationTimestamp`
+
+
+
+
+
+
+.debug[[k8s/ckad_core.md](file:///home/xeon/urgent/slides/k8s/ckad_core.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/aerial-view-of-containers.jpg)]
+
+---
+
+name: toc-pod-design
+class: title
+
+ Pod Design
+
+.nav[
+[Previous section](#toc-core-concepts)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-multicontainer-patterns)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Pod Design
+
+  - Understand how to use Labels, Selectors and Annotations
+  
+  - Understand Deployments and how to perform rolling updates
+  
+  - Understand Deployments and how to perform rollbacks
+  
+  - Understand Jobs and CronJobs
+
+.debug[[k8s/ckad_pod_design.md](file:///home/xeon/urgent/slides/k8s/ckad_pod_design.md)]
+---
+
+## Understand how to use Labels, Selectors and Annotations
+
+- List pods and show their labels `kubectl get pods --show-labels`
+
+- List pods with specific key and value `kubectl get pods -l env=dev`
+
+  - `kubectl get pods -l 'env in (dev,prod)' --show-labels`
+
+- List pods with specific key `kubectl get pods -L env`
+
+- Set label `kubectl label pod/nginx key=value`
+
+- Remove label `kubectl label pod/nginx key-`
+
+- Annotate the pods `kubectl annotate pod key=value`
+
+- Remove annotation `kubectl annotate pod key-`
+
+.debug[[k8s/ckad_pod_design.md](file:///home/xeon/urgent/slides/k8s/ckad_pod_design.md)]
+---
+
+## Understand Deployments and how to perform rolling updates
+
+- Create deployment `kubectl create deployment webapp --image=nginx --dry-run -o yaml > webapp.yml`
+
+- Delete deployment `kubectl delete deployment webapp`
+
+- Scale deployment `kubectl scale deployment webapp --replicas 5`
+
+- Check deployment rollout status `kubectl rollout status deployment webapp`
+
+- Check deployment rollout history `kubectl rollout history deployment webapp`
+
+- Rollout to specific version `kubectl rollout undo deployment webapp --to-revision=2`
+
+.debug[[k8s/ckad_pod_design.md](file:///home/xeon/urgent/slides/k8s/ckad_pod_design.md)]
+---
+
+## Understand Deployments and how to perform rollbacks
+
+- Rollback a deployment `kubectl rollout undo deployment webapp`
+
+- Rollout to specific version `kubectl rollout undo deployment webapp --to-revision=2`
+
+.debug[[k8s/ckad_pod_design.md](file:///home/xeon/urgent/slides/k8s/ckad_pod_design.md)]
+---
+
+## Understand Jobs and CronJobs
+
+- Create a Job `kubectl create job hello-job --image busybox --dry-run -o yaml -- echo "Hello" > hello-job.yaml`
+
+- Create a Cronjob 
+
+  `kubectl create cronjob date-job --image=busybox --schedule="*/1 * * * *" -- bin/sh -c "date; echo Hello from kubernetes cluster"`
+
+- activeDeadlineSeconds: automatically terminates job after a period in seconds
+
+- parallelism: maximum number of pods running at any given time
+
+- completions: number of times the jobs can run
+
+- backoffLimits: number of retries before making the job failed
+
+
+.debug[[k8s/ckad_pod_design.md](file:///home/xeon/urgent/slides/k8s/ckad_pod_design.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/blue-containers.jpg)]
+
+---
+
+name: toc-multicontainer-patterns
+class: title
+
+ Multicontainer Patterns
+
+.nav[
+[Previous section](#toc-pod-design)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-configuration)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Multicontainer Patterns
+
+
+- Understand multi-container pod design patterns (eg: ambassador, adaptor, sidecar)
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+## The Sidecar Pattern
+
+
+- Make use of small pluggable components
+
+--
+
+- An example in linux is the `ps` command; displays the currently running processes but no flag to filter output
+
+--
+
+- use `grep`
+
+- `ps faux | grep docker`
+
+--
+
+- Typically, a Pod contains a single container. However, multiple containers can be placed in the same Pod.
+
+- Typically, a Pod contains a single container. However, multiple containers can be placed in the same Pod.
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+class: pic
+
+## Scenario: Log-Shipping Sidecar
+
+![sidecar](images/sidecarpattern.jpg)
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: webserver
+spec:
+  volumes:
+    - name: shared-logs
+      emptyDir: {}
+  containers:
+    - name: nginx
+      image: nginx
+      volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/nginx
+
+    - name: sidecar-container
+      image: busybox
+      command: ["sh","-c","while true; do cat /var/log/nginx/access.log /var/log/nginx/error.log; sleep 30; done"]
+      volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/nginx
+  ```
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+## The Adapter Pattern
+
+- Why do we need an adapter container?
+
+--
+
+  - Establish a unified interface for our application container (main) that can be used by a third-party service .eg Prometheus 
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+class: pic
+
+![adapter](images/adapterpattern.jpg)
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+```yaml
+  containers:
+  - name: webserver
+    image: nginx
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - mountPath: /etc/nginx/conf.d
+      name: nginx-conf
+      readOnly: true
+  - name: adapter
+    image: nginx/nginx-prometheus-exporter:0.4.2
+    args: ["-nginx.scrape-uri","http://localhost/nginx_status"]
+    ports:
+    - containerPort: 9113
+  ```
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+## The Ambassador Pattern
+
+- Proxy connections from the application container (main) to other services
+
+- For example, test database, staging database, production database
+
+--
+
+  - Which database do we connect to?
+
+  - Use an ambassador container to proxy DB connections depending on where it runs
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+class: pic
+
+![ambassadordb](images/ambassador-diagram.png)
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+## Scenario: Connecting to multiple Redis servers
+
+
+- Another use case is when the application needs to connect to a caching server like `Redis`
+
+- The application initiates a request to localhost:6380. As far as the application is concerned, this is the Redis server
+
+- The Ambassador container picks up the request and relays it to the Redis servers defined in its configuration
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+class: pic
+
+![ambassadorcache](images/ambassadorpattern.png)
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+```yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ambassador-example
+spec:
+  containers:
+  - name: redis-client
+    image: redis
+  - name: ambassador
+    image: malexer/twemproxy
+    env:
+    - name: REDIS_SERVERS
+      value: redis-st-0.redis-svc.default.svc.cluster.local:6379:1 redis-st-1.redis-svc.default.svc.cluster.local:6379:1
+    ports:
+    - containerPort: 6380
+```
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+## References:
+
+
+
+- [Kubernetes Patterns by Bilgin Ibryam and Roland Huß](https://k8spatterns.io/)
+
+- [Kubernetes Patterns talk by Roland Huß](https://www.youtube.com/watch?v=eJmNSYvelSw)
+
+
+.debug[[k8s/ckad_multicontainer.md](file:///home/xeon/urgent/slides/k8s/ckad_multicontainer.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/chinook-helicopter-container.jpg)]
+
+---
+
+name: toc-configuration
+class: title
+
+ Configuration
+
+.nav[
+[Previous section](#toc-multicontainer-patterns)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-observability)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Configuration
+
+- Understand ConfigMaps
+
+- Understand SecurityContexts
+
+- Define an application’s resource requirements
+
+- Create & consume Secrets
+
+- Understand ServiceAccounts
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Understand ConfigMaps
+
+- A ConfigMap is an API object used to store non-confidential data in key-value pairs. Pods can consume ConfigMaps as environment variables, command-line arguments, or as configuration files in a volume
+
+- configmap with literal values `kubectl create cm myconfigmap --from-literal=appname=myapp`
+
+- configmap from a file `kubectl create cm keyvalcfgmap --from-file=config.txt`
+
+- configmap from an env file `kubectl create cm envcfgmap --from-env-file=file.env`
+
+- Mount configmaps as volumes
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Understand SecurityContexts
+
+- A security context defines privilege and access control settings for a Pod or Container
+
+- Run the a Pod/Container as whom? `runAsUser` `runAsGroup`
+
+- Restrict Pod/Container capabilities `["NET_ADMIN", "SYS_TIME"]`
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Define an application’s resource requirements
+
+- We can attach resource indications to our pods
+
+  (or rather: to the *containers* in our pods)
+
+- We can specify *limits* and/or *requests*
+
+- We can specify quantities of CPU and/or memory
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Limits vs requests
+
+- Limits are "hard limits" (they can't be exceeded)
+
+  - a container exceeding its memory limit is killed
+
+  - a container exceeding its CPU limit is throttled
+
+- Requests are used for scheduling purposes
+
+  - a container using *less* than what it requested will never be killed or throttled
+
+  - the scheduler uses the requested sizes to determine placement
+
+  - the resources requested by all pods on a node will never exceed the node size
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Specifying resources
+
+- Resource requests are expressed at the *container* level
+
+- CPU is expressed in "virtual CPUs"
+
+  (corresponding to the virtual CPUs offered by some cloud providers)
+
+- CPU can be expressed with a decimal value, or even a "milli" suffix
+
+  (so 100m = 0.1)
+
+- Memory is expressed in bytes, kilobytes, megabytes ...etc
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Specifying resources in practice
+
+This is what the spec of a Pod with resources will look like:
+
+```yaml
+containers:
+- name: nginx
+  image: nginx
+  resources:
+    limits:
+      memory: "100Mi"
+      cpu: "100m"
+    requests:
+      memory: "100Mi"
+      cpu: "10m"
+```
+
+This set of resources makes sure that this service won't be killed (as long as it stays below 100 MB of RAM), but allows its CPU usage to be throttled if necessary.
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Default values
+
+- If we specify a limit without a request: 
+
+  the request is set to the limit
+
+- If we specify a request without a limit: 
+
+  there will be no limit
+
+  (which means that the limit will be the size of the node)
+
+- If we don't specify anything:
+
+  the request is zero and the limit is the size of the node
+
+*Unless there are default values defined for our namespace!*
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## We need default resource values
+
+- If we do not set resource values at all:
+
+  - the limit is "the size of the node"
+
+  - the request is zero
+
+- This is generally *not* what we want
+
+  - a container without a limit can use up all the resources of a node
+
+  - if the request is zero, the scheduler can't make a smart placement decision
+
+- To address this, we can set default values for resources
+
+- This is done with a LimitRange object
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Defining min, max, and default resources
+
+- We can create LimitRange objects to indicate any combination of:
+
+  - min and/or max resources allowed per pod
+
+  - default resource *limits*
+
+  - default resource *requests*
+
+
+- LimitRange objects are namespaced
+
+- They apply to their namespace only
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## LimitRange example
+
+```yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: my-very-detailed-limitrange
+spec:
+  limits:
+  - type: Container
+    min:
+      cpu: "100m"
+    max:
+      cpu: "2000m"
+      memory: "1Gi"
+    default:
+      cpu: "500m"
+      memory: "250Mi"
+    defaultRequest:
+      cpu: "500m"
+```
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Namespace quotas
+
+- We can also set quotas per namespace
+
+- Quotas apply to the total usage in a namespace
+
+  (e.g. total CPU limits of all pods in a given namespace)
+
+- Quotas can apply to resource limits and/or requests
+
+  (like the CPU and memory limits that we saw earlier)
+
+- Quotas can also apply to other resources:
+
+  - "extended" resources (like GPUs)
+
+  - storage size
+
+  - number of objects (number of pods, services...)
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Creating a quota for a namespace
+
+- Quotas are enforced by creating a ResourceQuota object
+
+- ResourceQuota objects are namespaced, and apply to their namespace only
+
+- We can have multiple ResourceQuota objects in the same namespace
+
+- The most restrictive values are used
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Limiting total CPU/memory usage
+
+- The following YAML specifies an upper bound for *limits* and *requests*:
+  ```yaml
+    apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: a-little-bit-of-compute
+    spec:
+      hard:
+        requests.cpu: "10"
+        requests.memory: 10Gi
+        limits.cpu: "20"
+        limits.memory: 20Gi
+  ```
+
+These quotas will apply to the namespace where the ResourceQuota is created.
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Limiting number of objects
+
+- The following YAML specifies how many objects of specific types can be created:
+  ```yaml
+    apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: quota-for-objects
+    spec:
+      hard:
+        pods: 100
+        services: 10
+        secrets: 10
+        configmaps: 10
+        persistentvolumeclaims: 20
+        services.nodeports: 0
+        services.loadbalancers: 0
+        count/roles.rbac.authorization.k8s.io: 10
+  ```
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## YAML vs CLI
+
+- Quotas can be created with a YAML definition
+
+- ...Or with the `kubectl create quota` command
+
+- Example:
+  ```bash
+  kubectl create quota my-resource-quota --hard=pods=300,limits.memory=300Gi
+  ```
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Viewing current usage
+
+When a ResourceQuota is created, we can see how much of it is used:
+
+```
+kubectl describe resourcequota my-resource-quota
+
+Name:                            my-resource-quota
+Namespace:                       default
+Resource                         Used  Hard
+--------                         ----  ----
+pods                             12    100
+services                         1     5
+services.loadbalancers           0     0
+services.nodeports               0     0
+```
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Limiting resources in practice
+
+- We have at least three mechanisms:
+
+  - requests and limits per Pod
+
+  - LimitRange per namespace
+
+  - ResourceQuota per namespace
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Viewing a namespace limits and quotas
+
+- `kubectl describe namespace` will display resource limits and quotas
+
+.exercise[
+
+- Try it out:
+  ```bash
+  kubectl describe namespace default
+  ```
+
+- View limits and quotas for *all* namespaces:
+  ```bash
+  kubectl describe namespace
+  ```
+
+]
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Create & consume Secrets
+
+![secrets](images/secretscreate.png)
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+class: pic
+
+![secrets](images/secretsconsume.png)
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+## Understand ServiceAccounts
+
+- Provide an identity for pods
+
+- When you access a cluster you're authenticated by the apiserver as a User Account
+
+- While processes in containers inside pods are authenticated as some Service Account
+
+- Create a service account `kubectl create serviceaccount admin`
+
+
+.debug[[k8s/ckad_configuration.md](file:///home/xeon/urgent/slides/k8s/ckad_configuration.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/container-cranes.jpg)]
+
+---
+
+name: toc-observability
+class: title
+
+ Observability
+
+.nav[
+[Previous section](#toc-configuration)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-services-and-networking)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Observability
+
+- Understand LivenessProbes and ReadinessProbes
+
+- Understand container logging
+
+- Understand how to monitor applications in Kubernetes
+
+- Understand debugging in Kubernetes
+
+.debug[[k8s/ckad_observability.md](file:///home/xeon/urgent/slides/k8s/ckad_observability.md)]
+---
+
+## Liveness probe
+
+- Indicates if the container is dead or alive
+
+- A dead container cannot come back to life
+
+- If the liveness probe fails, the container is killed
+
+  (to make really sure that it's really dead; no zombies or undeads!)
+
+- What happens next depends on the pod's `restartPolicy`:
+
+  - `Never`: the container is not restarted
+
+  - `OnFailure` or `Always`: the container is restarted
+
+.debug[[k8s/ckad_observability.md](file:///home/xeon/urgent/slides/k8s/ckad_observability.md)]
+---
+
+## When to use a liveness probe
+
+- To indicate failures that can't be recovered
+
+  - deadlocks (causing all requests to time out)
+
+  - internal corruption (causing all requests to error)
+
+- Anything where our incident response would be "just restart/reboot it"
+
+.warning[**Do not** use liveness probes for problems that can't be fixed by a restart]
+
+- Otherwise we just restart our pods for no reason, creating useless load
+
+.debug[[k8s/ckad_observability.md](file:///home/xeon/urgent/slides/k8s/ckad_observability.md)]
+---
+
+## Readiness probe
+
+- Indicates if the container is ready to serve traffic
+
+- If a container becomes "unready" it might be ready again soon
+
+- If the readiness probe fails:
+
+  - the container is *not* killed
+
+  - if the pod is a member of a service, it is temporarily removed
+
+  - it is re-added as soon as the readiness probe passes again
+
+.debug[[k8s/ckad_observability.md](file:///home/xeon/urgent/slides/k8s/ckad_observability.md)]
+---
+
+## When to use a readiness probe
+
+- To indicate failure due to an external cause
+
+  - database is down or unreachable
+
+  - mandatory auth or other backend service unavailable
+
+- To indicate temporary failure or unavailability
+
+  - application can only service *N* parallel connections
+
+  - runtime is busy doing garbage collection or initial data load
+
+- For processes that take a long time to start
+
+  (more on that later)
+
+.debug[[k8s/ckad_observability.md](file:///home/xeon/urgent/slides/k8s/ckad_observability.md)]
+---
+
+## Different types of probes
+
+- HTTP request
+
+  - specify URL of the request (and optional headers)
+
+  - any status code between 200 and 399 indicates success
+
+- TCP connection
+
+  - the probe succeeds if the TCP port is open
+
+- arbitrary exec
+
+  - a command is executed in the container
+
+  - exit status of zero indicates success
+
+.debug[[k8s/ckad_observability.md](file:///home/xeon/urgent/slides/k8s/ckad_observability.md)]
+---
+
+## Understand logging, monitoring, and debugging in Kubernetes
+
+- `kubectl logs ${POD_NAME}`
+
+- `kubectl describe pod ${POD_NAME}`
+
+- `kubectl get events`
+
+- `kubectl exec -ti pod ${POD_NAME} -- bash` then inspect /var/log/*.log
+
+
+.debug[[k8s/ckad_observability.md](file:///home/xeon/urgent/slides/k8s/ckad_observability.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/container-housing.jpg)]
+
+---
+
+name: toc-services-and-networking
+class: title
+
+ Services and Networking
+
+.nav[
+[Previous section](#toc-observability)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-state-persistence)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# Services and Networking
+
+- Understand Services
+
+  - ClusterIP
+
+  - NodePort
+
+  - LoadBalancer
+
+  - ExternalName
+
+  - Headless
+
+- Demonstrate basic understanding of NetworkPolicies
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## Services
+
+- Services give us a *stable endpoint* to connect to a pod or a group of pods
+
+- An easy way to create a service is to use `kubectl expose`
+
+- If we have a deployment named `my-little-deploy`, we can run:
+
+  `kubectl expose deployment my-little-deploy --port=80`
+
+  ... and this will create a service with the same name (`my-little-deploy`)
+
+- Services are automatically added to an internal DNS zone
+
+  (in the example above, our code can now connect to http://my-little-deploy/)
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## Advantages of services
+
+- We don't need to look up the IP address of the pod(s)
+
+  (we resolve the IP address of the service using DNS)
+
+- There are multiple service types; some of them allow external traffic
+
+  (e.g. `LoadBalancer` and `NodePort`)
+
+- Services provide load balancing
+
+  (for both internal and external traffic)
+
+- Service addresses are independent from pods' addresses
+
+  (when a pod fails, the service seamlessly sends traffic to its replacement)
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## Many kinds and flavors of service
+
+- There are different types of services:
+
+  `ClusterIP`, `NodePort`, `LoadBalancer`, `ExternalName`
+
+- There are also *headless services*
+
+- Services can also have optional *external IPs*
+
+- There is also another resource type called *Ingress*
+
+  (specifically for HTTP services)
+
+- Wow, that's a lot! Let's start with the basics ...
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## `ClusterIP`
+
+- It's the default service type
+
+- A virtual IP address is allocated for the service
+
+  (in an internal, private range; e.g. 10.96.0.0/12)
+
+- This IP address is reachable only from within the cluster (nodes and pods)
+
+- Our code can connect to the service using the original port number
+
+- Perfect for internal communication, within the cluster
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## `LoadBalancer`
+
+- An external load balancer is allocated for the service
+
+  (typically a cloud load balancer, e.g. ELB on AWS, GLB on GCE ...)
+
+- This is available only when the underlying infrastructure provides some kind of
+  "load balancer as a service"
+
+- Each service of that type will typically cost a little bit of money
+
+  (e.g. a few cents per hour on AWS or GCE)
+
+- Ideally, traffic would flow directly from the load balancer to the pods
+
+- In practice, it will often flow through a `NodePort` first
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## `NodePort`
+
+- A port number is allocated for the service
+
+  (by default, in the 30000-32767 range)
+
+- That port is made available *on all our nodes* and anybody can connect to it
+
+  (we can connect to any node on that port to reach the service)
+
+- Our code needs to be changed to connect to that new port number
+
+- Under the hood: `kube-proxy` sets up a bunch of `iptables` rules on our nodes
+
+- Sometimes, it's the only available option for external traffic
+
+  (e.g. most clusters deployed with kubeadm or on-premises)
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## Services are layer 4 constructs
+
+- You can assign IP addresses to services, but they are still *layer 4*
+
+  (i.e. a service is not an IP address; it's an IP address + protocol + port)
+
+- This is caused by the current implementation of `kube-proxy`
+
+  (it relies on mechanisms that don't support layer 3)
+
+- As a result: you *have to* indicate the port number for your service
+    
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## `ExternalName`
+
+- Services of type `ExternalName` are quite different
+
+- No load balancer (internal or external) is created
+
+- Only a DNS entry gets added to the DNS managed by Kubernetes
+
+- That DNS entry will just be a `CNAME` to a provided record
+
+Example:
+```bash
+kubectl create service externalname k8s --external-name kubernetes.io
+```
+*Creates a CNAME `k8s` pointing to `kubernetes.io`*
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## Headless services
+
+- Sometimes, we want to access our scaled services directly:
+
+  - if we want to save a tiny little bit of latency (typically less than 1ms)
+
+  - if we need to connect over arbitrary ports (instead of a few fixed ones)
+
+  - if we need to communicate over another protocol than UDP or TCP
+
+  - if we want to decide how to balance the requests client-side
+
+  - ...
+
+- In that case, we can use a "headless service"
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## Creating a headless services
+
+- A headless service is obtained by setting the `clusterIP` field to `None`
+
+  (Either with `--cluster-ip=None`, or by providing a custom YAML)
+
+- As a result, the service doesn't have a virtual IP address
+
+- Since there is no virtual IP address, there is no load balancer either
+
+- CoreDNS will return the pods' IP addresses as multiple `A` records
+
+- This gives us an easy way to discover all the replicas for a deployment
+
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## The DNS zone
+
+- In the `kube-system` namespace, there should be a service named `kube-dns`
+
+- This is the internal DNS server that can resolve service names
+
+- The default domain name for the service we created is `default.svc.cluster.local`
+
+.exercise[
+
+- Get the IP address of the internal DNS server:
+  ```bash
+  IP=$(kubectl -n kube-system get svc kube-dns -o jsonpath={.spec.clusterIP})
+  ```
+]
+
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+## `Ingress`
+
+- Ingresses are another type (kind) of resource
+
+- They are specifically for HTTP services
+
+  (not TCP or UDP)
+
+- They can also handle TLS certificates, URL rewriting ...
+
+- They require an *Ingress Controller* to function
+.debug[[k8s/ckad_services_networking.md](file:///home/xeon/urgent/slides/k8s/ckad_services_networking.md)]
+---
+
+class: pic
+
+.interstitial[![Image separating from the next module](https://gallant-turing-d0d520.netlify.com/containers/containers-by-the-water.jpg)]
+
+---
+
+name: toc-state-persistence
+class: title
+
+ State Persistence
+
+.nav[
+[Previous section](#toc-services-and-networking)
+|
+[Back to table of contents](#toc-module-0)
+|
+[Next section](#toc-)
+]
+
+.debug[(automatically generated title slide)]
+
+---
+# State Persistence
+
+- Understand PersistentVolumeClaims for storage
+
+.debug[[k8s/ckad_state.md](file:///home/xeon/urgent/slides/k8s/ckad_state.md)]
+---
+
+## Understand PersistentVolumeClaims for storage
+
+- Our Pods can use a special volume type: a *Persistent Volume Claim*
+
+- A Persistent Volume Claim (PVC) is also a Kubernetes resource
+
+  (visible with `kubectl get persistentvolumeclaims` or `kubectl get pvc`)
+
+- A PVC is not a volume; it is a *request for a volume*
+
+- It should indicate at least:
+
+  - the size of the volume (e.g. "5 GiB")
+
+  - the access mode (e.g. "read-write by a single pod")
+
+.debug[[k8s/ckad_state.md](file:///home/xeon/urgent/slides/k8s/ckad_state.md)]
+---
+
+## What's in a PVC?
+
+- A PVC contains at least:
+
+  - a list of *access modes* (ReadWriteOnce, ReadOnlyMany, ReadWriteMany)
+
+  - a size (interpreted as the minimal storage space needed)
+
+- It can also contain optional elements:
+
+  - a selector (to restrict which actual volumes it can use)
+
+  - a *storage class* (used by dynamic provisioning, more on that later)
+
+.debug[[k8s/ckad_state.md](file:///home/xeon/urgent/slides/k8s/ckad_state.md)]
+---
+
+## What does a PVC look like?
+
+Here is a manifest for a basic PVC:
+
+```yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+   name: my-claim
+spec:
+   accessModes:
+     - ReadWriteOnce
+   resources:
+     requests:
+       storage: 1Gi
+```
+.debug[[k8s/ckad_state.md](file:///home/xeon/urgent/slides/k8s/ckad_state.md)]
+---
+
+## Using a Persistent Volume Claim
+
+Here is a Pod definition like the ones shown earlier, but using a PVC:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-using-a-claim
+spec:
+  containers:
+  - image: ...
+    name: container-using-a-claim
+    volumeMounts:
+    - mountPath: /my-vol
+      name: my-volume
+  volumes:
+  - name: my-volume
+    persistentVolumeClaim:
+      claimName: my-claim
+```
+
+.debug[[k8s/ckad_state.md](file:///home/xeon/urgent/slides/k8s/ckad_state.md)]
+---
+
+## Creating and using Persistent Volume Claims
+
+- PVCs can be created manually and used explicitly
+
+  (as shown on the previous slides)
+
+- They can also be created and used through Stateful Sets
+
+  (this will be shown later)
+
+.debug[[k8s/ckad_state.md](file:///home/xeon/urgent/slides/k8s/ckad_state.md)]
+---
+
+## Lifecycle of Persistent Volume Claims
+
+- When a PVC is created, it starts existing in "Unbound" state
+
+  (without an associated volume)
+
+- A Pod referencing an unbound PVC will not start
+
+  (the scheduler will wait until the PVC is bound to place it)
+
+- A special controller continuously monitors PVCs to associate them with PVs
+
+- If no PV is available, one must be created:
+
+  - manually (by operator intervention)
+
+  - using a *dynamic provisioner* (more on that later)
+
+.debug[[k8s/ckad_state.md](file:///home/xeon/urgent/slides/k8s/ckad_state.md)]
+---
+class: title, in-person
+
+Thank you! <br/> Questions?
+
+.debug[[shared/thankyou.md](file:///home/xeon/urgent/slides/shared/thankyou.md)]</textarea>
+    <script src="remark.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        ratio: '16:9',
+        highlightSpans: true,
+        slideNumberFormat: '%current%/%total%',
+        excludedClasses: ["self-paced","snap","btp-auto","benchmarking","elk-manual","prom-manual","extra-details"]
+      });
+    </script>
+    
+    <!-- 
+    These two scripts will be available only when loading the
+    content using the pub/sub server. Otherwise, they'll just
+    404 and that's OK.
+    -->
+    <script src="/socket.io/socket.io.js">
+    </script>
+    <script src="/remote.js">
+    </script>
+
+  </body>
+</html>
